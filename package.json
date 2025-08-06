@@ -1,0 +1,22 @@
+{
+  "name": "chess-pack",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "chess.js": "^1.0.0",
+    "execa": "^7.2.0",
+    "jszip": "^3.10.1",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/yargs": "^17.0.33",
+    "tsx": "^4.20.3",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}
