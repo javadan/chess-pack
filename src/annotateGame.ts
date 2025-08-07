@@ -58,13 +58,12 @@ export async function annotate(
     const move = game.moves[i]
     chess.move(move)
     const cur = await evaluate(chess.fen())
+    const entry: any = { eval: cur.score, best: cur.best }
+    analysis.push(entry)
     const swing = Math.abs(prev.score - cur.score)
-    if (swing >= 15) {
-      const judgment = {
-        name: swing >= 100 ? 'Blunder' : swing >= 50 ? 'Mistake' : 'Inaccuracy'
-      } as { name: string; comment?: string }
-      judgment.comment = `${judgment.name}. ${cur.best} was best.`
-      analysis.push({ eval: cur.score, best: cur.best, judgment })
+    if (i > 0 && swing >= 15) {
+      const name = swing >= 100 ? 'Blunder' : swing >= 50 ? 'Mistake' : 'Inaccuracy'
+      entry.judgment = { name, comment: `${name}. ${cur.best} was best.` }
       break
     }
     if (Math.abs(cur.score) >= 30000 || Math.abs(prev.score) >= 30000) {
@@ -73,7 +72,7 @@ export async function annotate(
     prev = cur
   }
 
-  if (analysis.length === 0) return null
+  if (!analysis.some(a => a.judgment)) return null
 
   const headers = game.headers
   const id = createHash('sha1')
