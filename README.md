@@ -68,6 +68,8 @@ node dist/cli.js eval \
 
 Each game is evaluated until the first ≥200 cp swing (or mate) and written as one line of NDJSON. Games without such a swing in the first 40 plies are skipped. The resulting file can be supplied to `make` via `--source`.
 
+Pass `--engine wasm|native` to choose between the built-in WebAssembly engine and a locally installed Stockfish binary (default `wasm`).
+
 To use a native Stockfish binary instead of the default WASM build:
 
 ```

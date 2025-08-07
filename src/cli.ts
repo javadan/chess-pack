@@ -31,19 +31,25 @@ export async function main(argv = hideBin(process.argv)) {
     , async (argv: any) => {
       await splitByEco(argv)
     })
-    .command('eval', 'annotate PGN with Stockfish', (y: any) => y
-      .option('pgn', { type: 'string', demandOption: true })
-      .option('out', { type: 'string', demandOption: true })
-      .option('depth', { type: 'number', default: 12 })
-      .option('threads', { type: 'number', default: 1 })
-      .option('engine', {
-        type: 'string',
-        choices: ['wasm', 'native'],
-        default: 'wasm'
-      })
-    , async (argv: any) => {
-      await evalCmd(argv)
-    })
+    .command(
+      'eval',
+      'annotate PGN with Stockfish',
+      (y: any) =>
+        y
+          .option('pgn', { type: 'string', demandOption: true })
+          .option('out', { type: 'string', demandOption: true })
+          .option('depth', { type: 'number', default: 12 })
+          .option('threads', { type: 'number', default: 1 })
+          .option('engine', {
+            describe: 'Which Stockfish engine to use',
+            choices: ['wasm', 'native'],
+            default: 'wasm',
+            type: 'string'
+          }),
+      async ({ pgn, out, depth, threads, engine }: any) => {
+        await evalCmd({ pgn, out, depth, threads, engine })
+      }
+    )
     .command('stats', 'show stats for packs', (y: any) => y
       .option('dir', { type: 'string', default: 'packs' })
     , async (argv: any) => {
