@@ -26,14 +26,7 @@ export async function run(opts: Opts): Promise<void> {
     })
     handle = { type: 'wasm', pool }
   } else {
-    const env = {
-      ...process.env,
-      PATH: `${process.env.PATH ?? ''}:/usr/games`
-    }
-    const proc: ChildProcessWithoutNullStreams = spawn(
-      process.env.STOCKFISH_PATH ?? 'stockfish',
-      { env }
-    )
+    const proc: ChildProcessWithoutNullStreams = spawn('stockfish')
     proc.on('error', () => {
       console.error(
         "native engine 'stockfish' not found on PATH—please install it."
