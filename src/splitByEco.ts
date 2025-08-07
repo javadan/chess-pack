@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import readline from 'node:readline'
-import { spawnPipeline } from './util/stream.js'
+import { streamPgn } from './streamPgn.js'
 
 interface Opts {
   pgn: string
@@ -27,39 +26,23 @@ export async function splitByEco(opts: Opts): Promise<void> {
     return writers[eco]
   }
 
-  const closeAll = () => {
-    for (const w of Object.values(writers)) w.end()
+  const closeAll = async () => {
+    await Promise.all(
+      Object.values(writers).map(
+        w => new Promise(res => w.end(res))
+      )
+    )
   }
 
   process.on('SIGINT', () => {
-    closeAll()
-    process.exit(0)
+    closeAll().then(() => process.exit(0))
   })
 
-  let stream: NodeJS.ReadableStream
-  if (pgn === '-') {
-    const proc = spawnPipeline([
-      ['npx', ['pgn-extract', '--fen', '--json', '--opening', '-']]
-    ])
-    process.stdin.pipe(proc.stdin!)
-    stream = proc.stdout!
-  } else {
-    const cmds: [string, string[]][] = []
-    if (pgn.endsWith('.zst')) cmds.push(['zstdcat', [pgn]])
-    else cmds.push(['cat', [pgn]])
-    cmds.push(['npx', ['pgn-extract', '--fen', '--json', '--opening', '-']])
-    const proc = spawnPipeline(cmds)
-    stream = proc.stdout!
-  }
-
-  const rl = readline.createInterface({ input: stream })
-
-  for await (const line of rl) {
-    if (!line) continue
-    const obj = JSON.parse(line)
-    const eco = obj?.opening?.eco
+  for await (const game of streamPgn(pgn)) {
+    const eco = game.headers.ECO
     if (!eco) continue
     if (ecoPrefix && !eco.startsWith(ecoPrefix)) continue
+    const line = JSON.stringify({ opening: { eco }, moves: game.moves })
     ensureWriter(eco).write(line + '\n')
     counts[eco]++
     total++
@@ -73,7 +56,7 @@ export async function splitByEco(opts: Opts): Promise<void> {
     if (limit && total >= limit) break
   }
 
-  closeAll()
+  await closeAll()
 
   const duration = Date.now() - start
   const mins = Math.floor(duration / 60000)

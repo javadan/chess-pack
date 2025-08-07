@@ -8,6 +8,7 @@ import { sample } from './sample.js'
 import { pack } from './packer.js'
 import { splitByEco } from './splitByEco.js'
 import { stats } from './stats.js'
+import { run as evalCmd } from './evalCmd.js'
 
 export async function main(argv = hideBin(process.argv)) {
   await yargs(argv)
@@ -29,6 +30,14 @@ export async function main(argv = hideBin(process.argv)) {
       .option('limit', { type: 'number', default: 0 })
     , async (argv: any) => {
       await splitByEco(argv)
+    })
+    .command('eval', 'annotate PGN with Stockfish', (y: any) => y
+      .option('pgn', { type: 'string', demandOption: true })
+      .option('out', { type: 'string', demandOption: true })
+      .option('depth', { type: 'number', default: 12 })
+      .option('threads', { type: 'number', default: 1 })
+    , async (argv: any) => {
+      await evalCmd(argv)
     })
     .command('stats', 'show stats for packs', (y: any) => y
       .option('dir', { type: 'string', default: 'packs' })
