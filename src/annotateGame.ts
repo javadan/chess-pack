@@ -80,11 +80,20 @@ export async function annotate(
     .update(JSON.stringify(headers) + game.moves.join(' '))
     .digest('hex')
 
+  const dateStr = headers.UTCDate || headers.Date || ''
+  const timeStr = headers.UTCTime || headers.Time || '00:00:00'
+  let createdAt = Date.parse(
+    `${dateStr.replace(/\./g, '-')}T${timeStr.replace(/\./g, ':')}Z`
+  )
+  if (Number.isNaN(createdAt)) createdAt = Date.now()
+
   return {
     id,
+    createdAt,
     opening: {
       eco: headers.ECO,
-      name: headers.Opening
+      name: headers.Opening,
+      variation: headers.Variation
     },
     moves: game.moves.join(' '),
     analysis
