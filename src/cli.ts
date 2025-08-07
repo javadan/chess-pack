@@ -36,6 +36,11 @@ export async function main(argv = hideBin(process.argv)) {
       .option('out', { type: 'string', demandOption: true })
       .option('depth', { type: 'number', default: 12 })
       .option('threads', { type: 'number', default: 1 })
+      .option('engine', {
+        type: 'string',
+        choices: ['wasm', 'native'],
+        default: 'wasm'
+      })
     , async (argv: any) => {
       await evalCmd(argv)
     })

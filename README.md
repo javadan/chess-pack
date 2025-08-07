@@ -67,3 +67,16 @@ node dist/cli.js eval \
 ```
 
 Each game is evaluated until the first ≥200 cp swing (or mate) and written as one line of NDJSON. Games without such a swing in the first 40 plies are skipped. The resulting file can be supplied to `make` via `--source`.
+
+To use a native Stockfish binary instead of the default WASM build:
+
+```
+node dist/cli.js eval \
+  --engine native \
+  --pgn packs/B90.pgn \
+  --out packs/B90.ndjson \
+  --depth 17 \
+  --threads 1
+```
+
+Ensure the `stockfish` executable is available on your `PATH` (for example, `brew install stockfish` on macOS).
