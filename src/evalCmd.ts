@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
@@ -5,19 +6,24 @@ import Piscina from 'piscina'
 import { streamPgn } from './streamPgn.js'
 import { annotate, type Engine } from './annotateGame.js'
 
+type EngineType = 'wasm' | 'native'
+
 interface Opts {
   pgn: string
   out: string
   depth: number
   threads: number
-  engine: 'wasm' | 'native'
+  engine: EngineType
 }
 
 export async function run(opts: Opts): Promise<void> {
   const { pgn, out, depth, threads, engine } = opts
+
+  // Ensure output directory exists
   await fs.promises.mkdir(path.dirname(out), { recursive: true })
   const outStream = fs.createWriteStream(out)
 
+  // Set up our engine handle (either a wasm-Piscina pool or a native Stockfish process)
   let handle: Engine
   if (engine === 'wasm') {
     const pool = new Piscina({
@@ -29,10 +35,12 @@ export async function run(opts: Opts): Promise<void> {
     const proc: ChildProcessWithoutNullStreams = spawn('stockfish')
     proc.on('error', () => {
       console.error(
-        "native engine 'stockfish' not found on PATH—please install it."
+        "Native engine 'stockfish' not found on your PATH. Please install it and try again."
       )
       process.exit(1)
     })
+
+    // Wait for UCI ready
     const ready = new Promise<void>(resolve => {
       const onData = (data: Buffer) => {
         if (data.toString().includes('uciok')) {
@@ -44,14 +52,19 @@ export async function run(opts: Opts): Promise<void> {
     })
     proc.stdin.write('uci\n')
     await ready
+
+    // Configure threads
     proc.stdin.write(`setoption name Threads value ${threads}\n`)
     handle = { type: 'native', proc }
+
+    // Clean up on Ctrl-C
     process.on('SIGINT', () => {
       proc.kill()
       process.exit(1)
     })
   }
 
+  // Progress reporting
   let scanned = 0
   let written = 0
   const start = Date.now()
@@ -63,6 +76,7 @@ export async function run(opts: Opts): Promise<void> {
     )
   }, 1000)
 
+  // Stream through the PGN file, annotate each game, and write out JSON lines
   for await (const game of streamPgn(pgn)) {
     scanned++
     const obj = await annotate(game, depth, handle)
@@ -74,8 +88,15 @@ export async function run(opts: Opts): Promise<void> {
 
   clearInterval(timer)
   outStream.end()
-  if (handle.type === 'native') handle.proc.kill()
-  else await handle.pool.destroy()
+
+  // Tear down engine
+  if (handle.type === 'native') {
+    handle.proc.kill()
+  } else {
+    await handle.pool.destroy()
+  }
+
+  // Final summary
   const duration = (Date.now() - start) / 1000
   console.log(`\ncompleted in ${duration.toFixed(1)}s`)
   console.log(`games scanned: ${scanned}`)
@@ -83,4 +104,3 @@ export async function run(opts: Opts): Promise<void> {
 }
 
 export default run
-
