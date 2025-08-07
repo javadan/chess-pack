@@ -36,15 +36,15 @@ export async function main(argv = hideBin(process.argv)) {
       'annotate PGN with Stockfish',
       (y: any) =>
         y
-          .option('pgn', { type: 'string', demandOption: true })
-          .option('out', { type: 'string', demandOption: true })
-          .option('depth', { type: 'number', default: 12 })
+          .option('pgn',     { type: 'string', demandOption: true })
+          .option('out',     { type: 'string', demandOption: true })
+          .option('depth',   { type: 'number', default: 12 })
           .option('threads', { type: 'number', default: 1 })
           .option('engine', {
-            describe: 'Which Stockfish engine to use',
-            choices: ['wasm', 'native'],
+            type: 'string' as const,
+            choices: ['wasm', 'native'] as const,
             default: 'wasm',
-            type: 'string'
+            describe: 'Which Stockfish backend to use'
           }),
       async ({ pgn, out, depth, threads, engine }: any) => {
         await evalCmd({ pgn, out, depth, threads, engine })
