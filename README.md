@@ -37,3 +37,18 @@
    - `--threads` *(default `1`)*: Thread count (reserved for future parallelism).
 
    The command fetches games, mines one mistake-based puzzle per matching game, deduplicates puzzles, samples up to 1000 of them, and writes `pack_<ECO>_v1.zip` into the specified output directory.
+
+## Split & Stats
+
+Split a large PGN dump into per-ECO NDJSON files:
+
+```
+npm run build
+node dist/cli.js split --pgn raw/lichess_db_standard_rated_2025-01.pgn.zst --out packs
+```
+
+Then view counts of games per ECO:
+
+```
+node dist/cli.js stats --dir packs
+```

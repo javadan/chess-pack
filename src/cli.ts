@@ -6,6 +6,8 @@ import { mineMistakes } from './mineMistakes.js'
 import { dedupe } from './dedupe.js'
 import { sample } from './sample.js'
 import { pack } from './packer.js'
+import { splitByEco } from './splitByEco.js'
+import { stats } from './stats.js'
 
 export async function main(argv = hideBin(process.argv)) {
   await yargs(argv)
@@ -19,6 +21,19 @@ export async function main(argv = hideBin(process.argv)) {
       const games = fetchGames(args.source as string, args.maxGames as number)
       const puzzles = await sample(dedupe(mineMistakes(games, args.eco as string)), 1000)
       await pack(args.out as string, args.eco as string, puzzles)
+    })
+    .command('split', 'split PGN by ECO', (y: any) => y
+      .option('pgn', { type: 'string', demandOption: true })
+      .option('out', { type: 'string', default: 'packs' })
+      .option('ecoPrefix', { type: 'string' })
+      .option('limit', { type: 'number', default: 0 })
+    , async (argv: any) => {
+      await splitByEco(argv)
+    })
+    .command('stats', 'show stats for packs', (y: any) => y
+      .option('dir', { type: 'string', default: 'packs' })
+    , async (argv: any) => {
+      await stats(argv)
     })
     .demandCommand(1)
     .help()
