@@ -52,3 +52,18 @@ Then view counts of games per ECO:
 ```
 node dist/cli.js stats --dir packs
 ```
+
+## Generate annotated NDJSON from PGN
+
+Analyze a PGN file with Stockfish and emit NDJSON games in the same shape as the Lichess user API:
+
+```
+npm run build
+node dist/cli.js eval \
+  --pgn packs/B90.pgn \
+  --out packs/B90.ndjson \
+  --depth 12 \
+  --threads 4
+```
+
+Each game is evaluated until the first ≥200 cp swing (or mate) and written as one line of NDJSON. Games without such a swing in the first 40 plies are skipped. The resulting file can be supplied to `make` via `--source`.
