@@ -17,20 +17,20 @@ interface Opts {
 }
 
 export async function run(opts: Opts): Promise<void> {
-  const { pgn, out, depth, threads, engine } = opts
+  const { pgn, out, depth, threads, engine: engineType } = opts
 
   // Ensure output directory exists
   await fs.promises.mkdir(path.dirname(out), { recursive: true })
-  const outStream = fs.createWriteStream(out)
+  const outputStream = fs.createWriteStream(out)
 
   // Set up our engine handle (either a wasm-Piscina pool or a native Stockfish process)
-  let handle: Engine
-  if (engine === 'wasm') {
+  let engine: Engine
+  if (engineType === 'wasm') {
     const pool = new Piscina({
       filename: new URL('./stockfishWorker.js', import.meta.url).pathname,
       maxThreads: threads
     })
-    handle = { type: 'wasm', pool }
+    engine = { type: 'wasm', pool }
   } else {
     const proc: ChildProcessWithoutNullStreams = spawn('stockfish')
     proc.on('error', () => {
@@ -55,7 +55,7 @@ export async function run(opts: Opts): Promise<void> {
 
     // Configure threads
     proc.stdin.write(`setoption name Threads value ${threads}\n`)
-    handle = { type: 'native', proc }
+    engine = { type: 'native', proc }
 
     // Clean up on Ctrl-C
     process.on('SIGINT', () => {
@@ -79,21 +79,20 @@ export async function run(opts: Opts): Promise<void> {
   // Stream through the PGN file, annotate each game, and write out JSON lines
   for await (const game of streamPgn(pgn)) {
     scanned++
-    const obj = await annotate(game, depth, handle)
-    if (obj) {
-      outStream.write(JSON.stringify(obj) + '\n')
-      written++
-    }
+    const annotated = await annotate(game, depth, engine)
+    if (!annotated) continue
+    outputStream.write(JSON.stringify(annotated) + '\n')
+    written++
   }
 
   clearInterval(timer)
-  outStream.end()
+  outputStream.end()
 
   // Tear down engine
-  if (handle.type === 'native') {
-    handle.proc.kill()
+  if (engine.type === 'native') {
+    engine.proc.kill()
   } else {
-    await handle.pool.destroy()
+    await engine.pool.destroy()
   }
 
   // Final summary
