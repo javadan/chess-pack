@@ -53,26 +53,27 @@ export async function annotate(
       : evaluateNative(engine.proc, fen, depth)
 
   let prev = await evaluate(chess.fen())
-  let found = false
 
   for (let i = 0; i < game.moves.length && i < 40; i++) {
     const move = game.moves[i]
     chess.move(move)
     const cur = await evaluate(chess.fen())
-    analysis.push({ eval: cur.score, best: cur.best })
     const swing = Math.abs(prev.score - cur.score)
-    if (
-      swing >= 200 ||
-      Math.abs(cur.score) >= 30000 ||
-      Math.abs(prev.score) >= 30000
-    ) {
-      found = true
+    if (swing >= 15) {
+      const judgment = {
+        name: swing >= 100 ? 'Blunder' : swing >= 50 ? 'Mistake' : 'Inaccuracy'
+      } as { name: string; comment?: string }
+      judgment.comment = `${judgment.name}. ${cur.best} was best.`
+      analysis.push({ eval: cur.score, best: cur.best, judgment })
+      break
+    }
+    if (Math.abs(cur.score) >= 30000 || Math.abs(prev.score) >= 30000) {
       break
     }
     prev = cur
   }
 
-  if (!found) return null
+  if (analysis.length === 0) return null
 
   const headers = game.headers
   const id = createHash('sha1')
